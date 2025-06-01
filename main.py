@@ -243,6 +243,23 @@ async def on_message(message):
         await message.channel.send(f"At your service {message.author.mention}, sir.")
 
 
+# --- Cleanup Function ---
+async def cleanup_rpc():
+    """Clean up RPC connection"""
+    global rpc
+    if rpc:
+        try:
+            await rpc.close()
+            print("RPC connection closed.")
+        except Exception as e:
+            print(f"Error closing RPC: {e}")
+
+# --- Discord Event Handler for Cleanup ---
+@client.event
+async def on_disconnect():
+    """Handle bot disconnect and cleanup"""
+    await cleanup_rpc()
+
 # --- Run the Bot ---
 if __name__ == "__main__":
     if DISCORD_BOT_TOKEN and GOOGLE_API_KEY:
@@ -252,14 +269,6 @@ if __name__ == "__main__":
             print("Error: Invalid Discord Bot Token. Please check your .env file.")
         except Exception as e:
             print(f"An error occurred while trying to run the bot: {e}")
-        finally:
-            # Clean up RPC connection
-            if rpc:
-                try:
-                    await rpc.close()
-                    print("RPC connection closed.")
-                except:
-                    pass
     else:
         if not DISCORD_BOT_TOKEN:
             print("Error: DISCORD_BOT_TOKEN not found in .env file.")
