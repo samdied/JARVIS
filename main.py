@@ -150,19 +150,28 @@ async def on_message(message):
     if message.author == client.user:
         return
 
+    # Check if this is a DM (private message)
+    is_dm = isinstance(message.channel, discord.DMChannel)
+    
     trigger_phrases = [f'<@!{client.user.id}>', f'<@{client.user.id}>', 'jarvis,']
     triggered = False
     user_query = ""
 
-    for phrase in trigger_phrases:
-        if message.content.lower().startswith(phrase.lower()):
-            triggered = True
-            user_query = message.content[len(phrase):].strip()
-            break
-        elif client.user.mentioned_in(message) and not message.mention_everyone:
-            triggered = True
-            user_query = message.content.replace(f'<@!{client.user.id}>', '').replace(f'<@{client.user.id}>', '').strip()
-            break
+    # If it's a DM, respond to any message
+    if is_dm:
+        triggered = True
+        user_query = message.content.strip()
+    else:
+        # In servers, check for triggers as before
+        for phrase in trigger_phrases:
+            if message.content.lower().startswith(phrase.lower()):
+                triggered = True
+                user_query = message.content[len(phrase):].strip()
+                break
+            elif client.user.mentioned_in(message) and not message.mention_everyone:
+                triggered = True
+                user_query = message.content.replace(f'<@!{client.user.id}>', '').replace(f'<@{client.user.id}>', '').strip()
+                break
 
     if triggered and user_query:
         print(f"Received query from {message.author.name}: '{user_query}'")
