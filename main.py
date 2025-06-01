@@ -96,7 +96,8 @@ async def connect_rpc():
         print("Discord RPC connected successfully!")
         return True
     except Exception as e:
-        print(f"Failed to connect to Discord RPC: {e}")
+        print(f"Discord RPC not available (running in cloud environment): {e}")
+        rpc = None
         return False
 
 async def update_rpc():
@@ -196,8 +197,9 @@ async def on_ready():
     )
     await client.change_presence(activity=listening_activity)
     
-    # Initialize RPC
-    if await connect_rpc():
+    # Initialize RPC (optional - may not work in cloud environments)
+    await connect_rpc()
+    if rpc:
         await update_rpc()
 
 
