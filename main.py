@@ -143,15 +143,12 @@ async def on_ready():
     print(f'Logged in as {client.user.name} (ID: {client.user.id})')
     print('------')
     
-    # Set Spotify listening activity
-    spotify_activity = discord.Spotify(
-        title="Back in Black",
-        artist="AC/DC",
-        album="Back in Black",
-        duration=255000,  # 4:15 in milliseconds
-        start=discord.utils.utcnow()
+    # Set listening activity to show "Listening to Back in Black by AC/DC"
+    listening_activity = discord.Activity(
+        type=discord.ActivityType.listening,
+        name="Back in Black by AC/DC"
     )
-    await client.change_presence(activity=spotify_activity)
+    await client.change_presence(activity=listening_activity)
 
 
 @client.event
