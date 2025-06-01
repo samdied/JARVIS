@@ -2,7 +2,7 @@ import discord
 import os
 import google.generativeai as genai # Changed import
 from dotenv import load_dotenv
-from pypresence import Presence
+from pypresence import AioPresence
 import time
 import asyncio
 
@@ -87,19 +87,19 @@ conversation_chats = {} # Stores genai.ChatSession objects per user_id
 MAX_HISTORY_MESSAGES_IN_CHAT = 10 # Number of user/model message pairs in chat history
 
 # --- RPC Functions ---
-def connect_rpc():
+async def connect_rpc():
     """Connect to Discord RPC"""
     global rpc
     try:
-        rpc = Presence(RPC_CLIENT_ID)
-        rpc.connect()
+        rpc = AioPresence(RPC_CLIENT_ID)
+        await rpc.connect()
         print("Discord RPC connected successfully!")
         return True
     except Exception as e:
         print(f"Failed to connect to Discord RPC: {e}")
         return False
 
-def update_rpc():
+async def update_rpc():
     """Update RPC to show Spotify-like listening status"""
     global rpc
     if rpc:
@@ -108,7 +108,7 @@ def update_rpc():
             # We'll simulate being 31 seconds into the song
             start_time = time.time() - 31
             
-            rpc.update(
+            await rpc.update(
                 details="Back In Black",  # Song title
                 state="by AC/DC",         # Artist
                 large_image="acdc_back_in_black",  # Album artwork key
@@ -197,8 +197,8 @@ async def on_ready():
     await client.change_presence(activity=listening_activity)
     
     # Initialize RPC
-    if connect_rpc():
-        update_rpc()
+    if await connect_rpc():
+        await update_rpc()
 
 
 @client.event
@@ -256,7 +256,7 @@ if __name__ == "__main__":
             # Clean up RPC connection
             if rpc:
                 try:
-                    rpc.close()
+                    await rpc.close()
                     print("RPC connection closed.")
                 except:
                     pass
