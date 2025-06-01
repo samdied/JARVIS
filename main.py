@@ -2,12 +2,20 @@ import discord
 import os
 import google.generativeai as genai # Changed import
 from dotenv import load_dotenv
+from pypresence import Presence
+import time
+import asyncio
 
 # --- Configuration ---
 load_dotenv() # Load environment variables from .env file
 
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") # Changed variable name
+
+# --- Discord RPC Configuration ---
+RPC_CLIENT_ID = "1313561816831627304"  # Your bot's client ID
+rpc = None
+start_time = time.time()
 
 # --- Initialize Google Gemini Client ---
 if GOOGLE_API_KEY:
@@ -79,6 +87,71 @@ client = discord.Client(intents=intents)
 conversation_chats = {} # Stores genai.ChatSession objects per user_id
 MAX_HISTORY_MESSAGES_IN_CHAT = 10 # Number of user/model message pairs in chat history
 
+# --- RPC Variables ---
+total_queries_handled = 0
+last_query_user = None
+
+# --- RPC Functions ---
+def init_rpc():
+    """Initialize Discord Rich Presence"""
+    global rpc
+    try:
+        rpc = Presence(RPC_CLIENT_ID)
+        rpc.connect()
+        update_rpc_status("Initializing", "Starting up systems...")
+        print("Discord RPC connected successfully")
+        return True
+    except Exception as e:
+        print(f"Failed to connect to Discord RPC: {e}")
+        return False
+
+def update_rpc_status(state, details, large_image="jarvis_logo", small_image="online"):
+    """Update Discord Rich Presence status"""
+    global rpc, start_time, total_queries_handled, last_query_user
+    
+    if not rpc:
+        return
+        
+    try:
+        rpc.update(
+            state=state,
+            details=details,
+            start=start_time,
+            large_image=large_image,
+            large_text="J.A.R.V.I.S. - Just A Rather Very Intelligent System",
+            small_image=small_image,
+            small_text="Online and Ready",
+            buttons=[
+                {"label": "Add to Server", "url": f"https://discord.com/api/oauth2/authorize?client_id={RPC_CLIENT_ID}&permissions=2048&scope=bot"},
+                {"label": "Support", "url": "https://discord.gg/replit"}
+            ]
+        )
+    except Exception as e:
+        print(f"Failed to update RPC: {e}")
+
+async def rpc_update_loop():
+    """Background task to update RPC periodically"""
+    while True:
+        try:
+            if last_query_user:
+                update_rpc_status(
+                    f"Assisting {last_query_user}",
+                    f"Handled {total_queries_handled} queries total",
+                    large_image="jarvis_thinking",
+                    small_image="busy"
+                )
+            else:
+                update_rpc_status(
+                    "Awaiting Instructions",
+                    f"Ready to assist • {total_queries_handled} queries handled",
+                    large_image="jarvis_logo",
+                    small_image="online"
+                )
+        except Exception as e:
+            print(f"RPC update loop error: {e}")
+        
+        await asyncio.sleep(15)  # Update every 15 seconds
+
 # --- Gemini Interaction Function ---
 async def get_jarvis_response(user_message_content, user_id):
     """
@@ -142,7 +215,14 @@ async def get_jarvis_response(user_message_content, user_id):
 async def on_ready():
     print(f'Logged in as {client.user.name} (ID: {client.user.id})')
     print('------')
-    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Back in Black"))
+    
+    # Initialize Discord RPC
+    if init_rpc():
+        # Start RPC update loop
+        client.loop.create_task(rpc_update_loop())
+    
+    # Set initial Discord presence
+    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="for commands | Ready to assist"))
 
 
 @client.event
@@ -174,7 +254,22 @@ async def on_message(message):
                 break
 
     if triggered and user_query:
+        global total_queries_handled, last_query_user
+        
         print(f"Received query from {message.author.name}: '{user_query}'")
+        
+        # Update RPC tracking variables
+        total_queries_handled += 1
+        last_query_user = message.author.name
+        
+        # Update RPC status to show processing
+        update_rpc_status(
+            f"Processing for {message.author.name}",
+            f"Analyzing query • {total_queries_handled} total queries",
+            large_image="jarvis_thinking",
+            small_image="busy"
+        )
+        
         async with message.channel.typing():
             bot_response = await get_jarvis_response(user_query, message.author.id)
             if len(bot_response) > 2000:
@@ -182,6 +277,14 @@ async def on_message(message):
                     await message.channel.send(bot_response[i:i+2000])
             else:
                 await message.channel.send(bot_response)
+        
+        # Update RPC status after completing response
+        update_rpc_status(
+            f"Completed query for {message.author.name}",
+            f"Response delivered • {total_queries_handled} queries handled",
+            large_image="jarvis_logo",
+            small_image="online"
+        )
     elif triggered and not user_query:
         await message.channel.send(f"At your service {message.author.mention}, sir.")
 
@@ -195,6 +298,14 @@ if __name__ == "__main__":
             print("Error: Invalid Discord Bot Token. Please check your .env file.")
         except Exception as e:
             print(f"An error occurred while trying to run the bot: {e}")
+        finally:
+            # Clean up RPC connection
+            if rpc:
+                try:
+                    rpc.close()
+                    print("Discord RPC connection closed")
+                except:
+                    pass
     else:
         if not DISCORD_BOT_TOKEN:
             print("Error: DISCORD_BOT_TOKEN not found in .env file.")
