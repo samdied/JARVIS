@@ -105,7 +105,7 @@ def init_rpc():
         print(f"Failed to connect to Discord RPC: {e}")
         return False
 
-def update_rpc_status(state, details, large_image="jarvis_logo", small_image="online"):
+def update_rpc_status(state, details, large_image="ACDC.png", small_image="online"):
     """Update Discord Rich Presence status"""
     global rpc, start_time, total_queries_handled, last_query_user
     
@@ -144,7 +144,7 @@ async def rpc_update_loop():
                 update_rpc_status(
                     "Awaiting Instructions",
                     f"Ready to assist • {total_queries_handled} queries handled",
-                    large_image="jarvis_logo",
+                    large_image="ACDC.png",
                     small_image="online"
                 )
         except Exception as e:
@@ -222,7 +222,7 @@ async def on_ready():
         client.loop.create_task(rpc_update_loop())
     
     # Set initial Discord presence
-    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="for commands | Ready to assist"))
+    await client.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Back in Black"))
 
 
 @client.event
