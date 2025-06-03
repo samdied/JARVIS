@@ -2,8 +2,6 @@ import discord
 import os
 import google.generativeai as genai # Changed import
 from dotenv import load_dotenv
-from pypresence import AioPresence
-import time
 import asyncio
 
 # --- Configuration ---
@@ -77,54 +75,14 @@ intents.message_content = True
 intents.members = True
 client = discord.Client(intents=intents)
 
-# --- Discord RPC Setup ---
-RPC_CLIENT_ID = "1313561816831627304"  # Your bot's client ID
-rpc = None
+
 
 # --- Global Variables (for conversation history) ---
 # Gemini's chat history expects roles "user" and "model"
 conversation_chats = {} # Stores genai.ChatSession objects per user_id
 MAX_HISTORY_MESSAGES_IN_CHAT = 10 # Number of user/model message pairs in chat history
 
-# --- RPC Functions ---
-async def connect_rpc():
-    """Connect to Discord RPC"""
-    global rpc
-    try:
-        rpc = AioPresence(RPC_CLIENT_ID)
-        await rpc.connect()
-        print("Discord RPC connected successfully!")
-        return True
-    except Exception as e:
-        print(f"Discord RPC not available (running in cloud environment): {e}")
-        rpc = None
-        return False
 
-async def update_rpc():
-    """Update RPC to show Spotify-like listening status"""
-    global rpc
-    if rpc:
-        try:
-            # Calculate start time for progress bar (song is 4:15 = 255 seconds)
-            # We'll simulate being 31 seconds into the song
-            start_time = time.time() - 31
-            
-            await rpc.update(
-                details="Back In Black",  # Song title
-                state="by AC/DC",         # Artist
-                large_image="acdc_back_in_black",  # Album artwork key
-                large_text="Back In Black - AC/DC",
-                small_image="spotify",     # Spotify icon
-                small_text="Listening to Spotify",
-                start=start_time,
-                end=start_time + 255,  # 4:15 total duration
-                buttons=[
-                    {"label": "Play on Spotify", "url": "https://open.spotify.com/track/08mG3Y1vljYA6bvDt4Wqkj"}
-                ]
-            )
-            print("RPC updated with Spotify-like appearance")
-        except Exception as e:
-            print(f"Failed to update RPC: {e}")
 
 # --- Gemini Interaction Function ---
 async def get_jarvis_response(user_message_content, user_id):
@@ -196,11 +154,6 @@ async def on_ready():
         name="Back in Black by AC/DC"
     )
     await client.change_presence(activity=listening_activity)
-    
-    # Initialize RPC (optional - may not work in cloud environments)
-    await connect_rpc()
-    if rpc:
-        await update_rpc()
 
 
 @client.event
@@ -245,22 +198,7 @@ async def on_message(message):
         await message.channel.send(f"At your service {message.author.mention}, sir.")
 
 
-# --- Cleanup Function ---
-async def cleanup_rpc():
-    """Clean up RPC connection"""
-    global rpc
-    if rpc:
-        try:
-            await rpc.close()
-            print("RPC connection closed.")
-        except Exception as e:
-            print(f"Error closing RPC: {e}")
 
-# --- Discord Event Handler for Cleanup ---
-@client.event
-async def on_disconnect():
-    """Handle bot disconnect and cleanup"""
-    await cleanup_rpc()
 
 # --- Run the Bot ---
 if __name__ == "__main__":
