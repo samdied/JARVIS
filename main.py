@@ -99,7 +99,7 @@ async def get_jarvis_response(user_message_content, user_id):
         #     {'role': 'model', 'parts': ["Understood. I am Jarvis, your AI assistant."]}
         # ]
         # conversation_chats[user_id] = gemini_model.start_chat(history=chat_history_for_new_chat)
-        
+
         # For models like gemini-1.5-pro that take system_instruction in constructor:
         conversation_chats[user_id] = gemini_model.start_chat(history=[])
 
@@ -147,13 +147,13 @@ async def get_jarvis_response(user_message_content, user_id):
 async def on_ready():
     print(f'Logged in as {client.user.name} (ID: {client.user.id})')
     print('------')
-    
-    # Set listening activity to show "Listening to Back in Black by AC/DC"
-    listening_activity = discord.Activity(
-        type=discord.ActivityType.listening,
-        name="Back in Black by AC/DC"
+
+    # Set streaming activity
+    streaming_activity = discord.Streaming(
+        name="Under Ctrl",
+        url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
     )
-    await client.change_presence(activity=listening_activity)
+    await client.change_presence(activity=streaming_activity)
 
 
 @client.event
@@ -163,7 +163,7 @@ async def on_message(message):
 
     # Check if this is a DM (private message)
     is_dm = isinstance(message.channel, discord.DMChannel)
-    
+
     trigger_phrases = [f'<@!{client.user.id}>', f'<@{client.user.id}>', 'jarvis,']
     triggered = False
     user_query = ""
@@ -186,7 +186,7 @@ async def on_message(message):
 
     if triggered and user_query:
         print(f"Received query from {message.author.name}: '{user_query}'")
-        
+
         async with message.channel.typing():
             bot_response = await get_jarvis_response(user_query, message.author.id)
             if len(bot_response) > 2000:
