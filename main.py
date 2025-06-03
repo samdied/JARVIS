@@ -150,7 +150,7 @@ async def on_ready():
 
     # Set streaming activity
     streaming_activity = discord.Streaming(
-        name="Under Ctrl",
+        name="Under Ctrl 🎮",
         url="https://www.youtube.com/watch?v=dQw4w9WgXcQ"
     )
     await client.change_presence(activity=streaming_activity)
